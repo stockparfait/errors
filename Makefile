@@ -23,7 +23,7 @@ all:
 	@echo "  make test     - run tests"
 	@echo "  make gofmt    - format all *.go files"
 	@echo "  make goconvey - start a goconvey session (Crtl-C to exit)"
-	@echo "  make clean    - delete object files and other temporary files"
+	@echo "  make clean    - delete generated files"
 
 init:
 	go install github.com/smartystreets/goconvey@v1.7.2

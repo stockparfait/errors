@@ -29,10 +29,6 @@ export PATH
 
 PACKAGES=("$@")
 
-if [ "$TEST_RECORD" = "1" ]; then
-    echo "*** Running tests in RECORD mode ***"
-fi
-
 echo "GOROOT: `go env GOROOT`"
 echo "GOPATH: `go env GOPATH`"
 
