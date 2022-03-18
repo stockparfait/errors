@@ -58,7 +58,7 @@ ERROR: /path/to/example.go:13: main.Use() x = -42 is negative
 
 ## Development
 
-Clone and initialize and the repository, run tests:
+Clone and initialize the repository, run tests:
 
 ```sh
 git clone git@github.com:stockparfait/errors.git
