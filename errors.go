@@ -39,16 +39,16 @@ type annotatedError struct {
 
 // Error implements error.
 func (e annotatedError) Error() string {
-	return fmt.Sprintf("ERROR: %s:\n%s", e.curr, e.orig.Error())
+	return fmt.Sprintf("%s:\n%s", e.curr, e.orig.Error())
 }
 
 // annotate must be called from Reason or Annotate only.
 func annotate(s string, args ...interface{}) string {
 	// Frame 2 is the caller of Reason / Annotate.
 	pc, filename, line, ok := runtime.Caller(2)
-	a := "???: "
+	a := "ERROR: ???: "
 	if ok {
-		a = fmt.Sprintf("%s:%d: %s() ", filename, line, runtime.FuncForPC(pc).Name())
+		a = fmt.Sprintf("ERROR: %s:%d: %s() ", filename, line, runtime.FuncForPC(pc).Name())
 	}
 	return a + fmt.Sprintf(s, args...)
 }
