@@ -14,8 +14,6 @@
 
 
 GOPATH=$(shell go env GOPATH)
-# Space separated list of package paths.
-PACKAGES=.
 
 all:
 	@echo "Please pick a target:"
@@ -28,15 +26,15 @@ all:
 init:
 	go install github.com/smartystreets/goconvey@v1.7.2
 	go install honnef.co/go/tools/cmd/staticcheck@2021.1.2
-	go install github.com/sergey-a-berezin/gocovcheck/gocovcheck@v1.2.0
-	go install github.com/sergey-a-berezin/gocovcheck/jsonread@v1.2.0
+	go install github.com/sergey-a-berezin/gocovcheck@v1.3.0
+	go install github.com/sergey-a-berezin/gocovcheck/jsonread@v1.3.0
 	@echo "Bootstrap done!"
 
 test:
-	./runtests $(PACKAGES)
+	./runtests
 
 gofmt:
-	gofmt -s -w $(PACKAGES)
+	gofmt -s -w .
 
 goconvey:
 	$(GOPATH)/bin/goconvey
