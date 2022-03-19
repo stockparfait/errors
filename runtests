@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage: ./runtest ./package1 ./pagkage2 ...
-
 
 # Stop the script on the first error.
 trap 'echo "runtests failed on line ${LINENO}"; exit 1' ERR
@@ -26,8 +24,6 @@ cd "${ROOT}"
 GOPATH=`go env GOPATH`
 PATH="${GOPATH}/bin:${PATH}"
 export PATH
-
-PACKAGES=("$@")
 
 echo "GOROOT: `go env GOROOT`"
 echo "GOPATH: `go env GOPATH`"
@@ -43,7 +39,7 @@ code_warnings=()
 rm -f "$COVERAGE_PROFILE"
 GOTEST_ARGS=()
 
-if ! go test -coverprofile "${COVERAGE_PROFILE}" "${GOTEST_ARGS[@]}" "${PACKAGES[@]}"; then
+if ! go test -coverprofile "${COVERAGE_PROFILE}" "${GOTEST_ARGS[@]}" ./...; then
 	tests_failed=1
 fi
 go tool cover -html="${COVERAGE_PROFILE}" -o "${COVERAGE_HTML}"
@@ -54,17 +50,17 @@ else
 	min_coverage="$DEFAULT_MIN_COVERAGE"
 fi
 
-if ! go vet "${PACKAGES[@]}"; then
+if ! go vet ./...; then
 	code_warnings=("${code_warnings[@]}" "go vet has warnings")
 fi
 
-if ! staticcheck "${PACKAGES[@]}"; then
+if ! staticcheck ./...; then
 	code_warnings=("${code_warnings[@]}" "staticcheck has warnings")
 fi
 
-if [[ ! -z $(gofmt -l -s "${PACKAGES[@]}") ]]; then
+if [[ ! -z $(gofmt -l -s .) ]]; then
 	echo "WARNING: the following files are not formatted correctly:"
-	gofmt -l -s "${PACKAGES[@]}"
+	gofmt -l -s .
 	echo "Please run 'make gofmt'."
 	code_warnings=("${code_warnings[@]}" "need to run 'make gofmt'")
 fi
