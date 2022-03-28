@@ -39,7 +39,7 @@ type annotatedError struct {
 
 // Error implements error.
 func (e annotatedError) Error() string {
-	return fmt.Sprintf("%s:\n%s", e.curr, e.orig.Error())
+	return fmt.Sprintf("%s\n%s", e.curr, e.orig.Error())
 }
 
 // annotate must be called from Reason or Annotate only.

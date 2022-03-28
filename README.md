@@ -9,7 +9,7 @@ This package is inspired by the
 package. However, LUCI is a huge mono-repo, which may be an overkill for smaller
 projects, or projects unrelated to Cloud apps.
 
-This repo is dedicated to a very light-weght implementation of a simple API that
+This repo is dedicated to a very light-weight implementation of a simple API that
 gets most of the job done.
 
 ## Installation
@@ -52,7 +52,7 @@ func main() {
 
 This should print something like this:
 ```
-ERROR: /path/to/example.go:20: main.Top() cannot use -42:
+ERROR: /path/to/example.go:20: main.Top() cannot use -42
 ERROR: /path/to/example.go:13: main.Use() x = -42 is negative
 ```
 
