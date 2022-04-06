@@ -53,12 +53,17 @@ func annotate(s string, args ...interface{}) string {
 	return a + fmt.Sprintf(s, args...)
 }
 
-// Reason returns an annotated error. Its arguments are the same as for
-// fmt.Printf.
+// Reason returns an error annotated with location and message. Its arguments
+// are the same as for fmt.Printf.
 func Reason(s string, args ...interface{}) error {
 	return fmt.Errorf(annotate(s, args...))
 }
 
+// Annotate the existing error with location and message, formatted as
+// fmt.Printf(s, args...). If the original error is nil, returns nil.
 func Annotate(e error, s string, args ...interface{}) error {
+	if e == nil {
+		return nil
+	}
 	return &annotatedError{orig: e, curr: annotate(s, args...)}
 }
