@@ -20,10 +20,12 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+// rsn provides a fixed function name and line number in error annotations.
 func rsn(r string) error {
 	return Reason(r)
 }
 
+// ann provides a fixed function name and line number in error annotations.
 func ann(e error, r string, args ...interface{}) error {
 	return Annotate(e, r, args...)
 }
@@ -32,14 +34,20 @@ func TestErrors(t *testing.T) {
 	Convey("Reason works", t, func() {
 		e := rsn("because")
 		So(e.Error(), ShouldContainSubstring,
-			"errors_test.go:24: github.com/stockparfait/errors.rsn() because")
+			"errors_test.go:25: github.com/stockparfait/errors.rsn() because")
 	})
 
 	Convey("Annotate works", t, func() {
-		e := ann(rsn("because"), "failed %s", "me")
-		So(e.Error(), ShouldContainSubstring,
-			"errors_test.go:28: github.com/stockparfait/errors.ann() failed me")
-		So(e.Error(), ShouldContainSubstring,
-			"errors_test.go:24: github.com/stockparfait/errors.rsn() because")
+		Convey("annotates non-nil error", func() {
+			e := ann(rsn("because"), "failed %s", "me")
+			So(e.Error(), ShouldContainSubstring,
+				"errors_test.go:30: github.com/stockparfait/errors.ann() failed me")
+			So(e.Error(), ShouldContainSubstring,
+				"errors_test.go:25: github.com/stockparfait/errors.rsn() because")
+		})
+
+		Convey("passes through nil error", func() {
+			So(ann(nil, "you won't see this"), ShouldBeNil)
+		})
 	})
 }
