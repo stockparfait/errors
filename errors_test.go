@@ -30,6 +30,10 @@ func ann(e error, r string, args ...interface{}) error {
 	return Annotate(e, r, args...)
 }
 
+type myError string
+
+func (e myError) Error() string { return string(e) }
+
 func TestErrors(t *testing.T) {
 	Convey("Reason works", t, func() {
 		e := rsn("because")
@@ -48,6 +52,15 @@ func TestErrors(t *testing.T) {
 
 		Convey("passes through nil error", func() {
 			So(ann(nil, "you won't see this"), ShouldBeNil)
+		})
+
+		Convey("Is and As work", func() {
+			err := myError("mine")
+			annotated := ann(err, "annotated")
+			So(Is(annotated, err), ShouldBeTrue)
+			var err2 myError
+			So(As(annotated, &err2), ShouldBeTrue)
+			So(err2, ShouldEqual, err)
 		})
 	})
 }
