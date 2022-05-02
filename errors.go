@@ -27,6 +27,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 )
@@ -40,6 +41,11 @@ type annotatedError struct {
 // Error implements error.
 func (e annotatedError) Error() string {
 	return fmt.Sprintf("%s\n%s", e.curr, e.orig.Error())
+}
+
+// Unwrap returns the original error being annotated. See also As and Is methods.
+func (e annotatedError) Unwrap() error {
+	return e.orig
 }
 
 // annotate must be called from Reason or Annotate only.
@@ -66,4 +72,20 @@ func Annotate(e error, s string, args ...interface{}) error {
 		return nil
 	}
 	return &annotatedError{orig: e, curr: annotate(s, args...)}
+}
+
+// Is reports whether any error in err's "Unwrap" chain matches target.
+//
+// It is exactly as Go's errors.Is method, and is provided to match the
+// functionality.
+func Is(err, target error) bool {
+	return errors.Is(err, target)
+}
+
+// As sets the target to the first applicable value in err's "Unwrap" chain.
+//
+// It is exactly as Go's errors.As method, and is provided to match the
+// functionality.
+func As(err error, target interface{}) bool {
+	return errors.As(err, target)
 }
