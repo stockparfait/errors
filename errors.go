@@ -15,15 +15,16 @@
 // Package errors implements custom error reporting.
 //
 // Example usage:
-//   func MyFunc(x int) error {
-//     if x < 0 {
-//       return errors.Reason("x = %d is negative", x)
-//     }
-//     return nil
 //
-//   if err := MyFunc(val); err != nil {
-//     return errors.Annotate(err, "cannot use %d", val)
-//   }
+//	func MyFunc(x int) error {
+//	  if x < 0 {
+//	    return errors.Reason("x = %d is negative", x)
+//	  }
+//	  return nil
+//
+//	if err := MyFunc(val); err != nil {
+//	  return errors.Annotate(err, "cannot use %d", val)
+//	}
 package errors
 
 import (
