@@ -50,9 +50,9 @@ func (e annotatedError) Unwrap() error {
 }
 
 // annotate must be called from Reason or Annotate only.
-func annotate(s string, args ...interface{}) string {
+func annotate(stack int, s string, args ...interface{}) string {
 	// Frame 2 is the caller of Reason / Annotate.
-	pc, filename, line, ok := runtime.Caller(2)
+	pc, filename, line, ok := runtime.Caller(stack)
 	a := "ERROR: ???: "
 	if ok {
 		a = fmt.Sprintf("ERROR: %s:%d: %s() ", filename, line, runtime.FuncForPC(pc).Name())
@@ -63,16 +63,29 @@ func annotate(s string, args ...interface{}) string {
 // Reason returns an error annotated with location and message. Its arguments
 // are the same as for fmt.Printf.
 func Reason(s string, args ...interface{}) error {
-	return fmt.Errorf(annotate(s, args...))
+	return ReasonStack(3, s, args...)
 }
 
 // Annotate the existing error with location and message, formatted as
 // fmt.Printf(s, args...). If the original error is nil, returns nil.
 func Annotate(e error, s string, args ...interface{}) error {
+	return AnnotateStack(e, 3, s, args...)
+}
+
+// ReasonStack returns an error annotated with location `stack` levels up, and
+// message. Its arguments are the same as for fmt.Printf.
+func ReasonStack(stack int, s string, args ...interface{}) error {
+	return fmt.Errorf(annotate(stack, s, args...))
+}
+
+// AnnotateStack annotates the existing error with location `stack` levels up,
+// and message, formatted as fmt.Printf(s, args...). If the original error is
+// nil, returns nil.
+func AnnotateStack(e error, stack int, s string, args ...interface{}) error {
 	if e == nil {
 		return nil
 	}
-	return &annotatedError{orig: e, curr: annotate(s, args...)}
+	return &annotatedError{orig: e, curr: annotate(stack, s, args...)}
 }
 
 // Is reports whether any error in err's "Unwrap" chain matches target.
