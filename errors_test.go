@@ -15,6 +15,7 @@
 package errors
 
 import (
+	"runtime"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -59,16 +60,16 @@ func TestErrors(t *testing.T) {
 	Convey("Reason works", t, func() {
 		e := rsn("because")
 		So(e.Error(), ShouldContainSubstring,
-			"errors_test.go:25: github.com/stockparfait/errors.rsn() because")
+			"errors_test.go:26: github.com/stockparfait/errors.rsn() because")
 	})
 
 	Convey("Annotate works", t, func() {
 		Convey("annotates non-nil error", func() {
 			e := ann(rsn("because"), "failed %s", "me")
 			So(e.Error(), ShouldContainSubstring,
-				"errors_test.go:30: github.com/stockparfait/errors.ann() failed me")
+				"errors_test.go:31: github.com/stockparfait/errors.ann() failed me")
 			So(e.Error(), ShouldContainSubstring,
-				"errors_test.go:25: github.com/stockparfait/errors.rsn() because")
+				"errors_test.go:26: github.com/stockparfait/errors.rsn() because")
 		})
 
 		Convey("passes through nil error", func() {
@@ -87,17 +88,35 @@ func TestErrors(t *testing.T) {
 
 	Convey("Panic methods work", t, func() {
 
+		Convey("trimFrames", func() {
+			frames := []runtime.Frame{
+				{Function: "aa"},
+				{Function: "runtime.gopanic"},
+				{Function: "cc"},
+				{Function: "bb"},
+				{Function: "runtime.main"},
+				{Function: "runtime.top"},
+			}
+			Convey("trims the frames when possible", func() {
+				So(trimFrames(frames), ShouldResemble, frames[2:4])
+			})
+
+			Convey("leave frames when no matches found", func() {
+				So(trimFrames(frames[2:4]), ShouldResemble, frames[2:4])
+			})
+		})
+
 		Convey("recover an error panic", func() {
 			err := fnA("error")
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring,
-				"errors_test.go:50: github.com/stockparfait/errors.fnC() error in fnC")
+				"errors_test.go:51: github.com/stockparfait/errors.fnC() error in fnC")
 			So(err.Error(), ShouldContainSubstring,
-				"errors_test.go:39 github.com/stockparfait/errors.fnA()")
+				"errors_test.go:40 github.com/stockparfait/errors.fnA()")
 			So(err.Error(), ShouldContainSubstring,
-				"errors_test.go:44 github.com/stockparfait/errors.fnB()")
+				"errors_test.go:45 github.com/stockparfait/errors.fnB()")
 			So(err.Error(), ShouldContainSubstring,
-				"errors_test.go:50 github.com/stockparfait/errors.fnC()")
+				"errors_test.go:51 github.com/stockparfait/errors.fnC()")
 		})
 
 		Convey("re-raise non-error panic", func() {
