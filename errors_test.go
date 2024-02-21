@@ -34,6 +34,27 @@ type myError string
 
 func (e myError) Error() string { return string(e) }
 
+func fnA(mode string) (err error) {
+	defer func() { err = FromPanic(recover()) }()
+	fnB(mode)
+	return nil
+}
+
+func fnB(mode string) {
+	fnC(mode)
+}
+
+func fnC(mode string) {
+	switch mode {
+	case "error":
+		ReasonPanic("error in %s", "fnC")
+	case "panic":
+		panic("panic in fnC")
+	default:
+		// no error or panic
+	}
+}
+
 func TestErrors(t *testing.T) {
 	Convey("Reason works", t, func() {
 		e := rsn("because")
@@ -61,6 +82,28 @@ func TestErrors(t *testing.T) {
 			var err2 myError
 			So(As(annotated, &err2), ShouldBeTrue)
 			So(err2, ShouldEqual, err)
+		})
+	})
+
+	Convey("Panic methods work", t, func() {
+
+		Convey("AnnotateFromPanic recovers an error panic", func() {
+			err := fnA("error")
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldContainSubstring,
+				"errors_test.go:50: github.com/stockparfait/errors.fnC() error in fnC")
+			So(err.Error(), ShouldContainSubstring, `
+PANIC: /Users/sergeyberezin/github/stockparfait/errors/errors_test.go:39 github.com/stockparfait/errors.fnA()
+PANIC: /Users/sergeyberezin/github/stockparfait/errors/errors_test.go:44 github.com/stockparfait/errors.fnB()
+PANIC: /Users/sergeyberezin/github/stockparfait/errors/errors_test.go:50 github.com/stockparfait/errors.fnC()`[1:])
+		})
+
+		Convey("AnnotateFromPanic re-raises non-error panic", func() {
+			So(func() { fnA("panic") }, ShouldPanic)
+		})
+
+		Convey("no-op without panic", func() {
+			So(fnA("none"), ShouldBeNil)
 		})
 	})
 }
