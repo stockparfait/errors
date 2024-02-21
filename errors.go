@@ -99,6 +99,24 @@ func ReasonPanic(s string, args ...any) {
 	panic(ReasonStack(3, s, args...))
 }
 
+// trimFrames to keep only the portion from panic to the top user main(). If in
+// doubt, keep the frames.
+func trimFrames(frames []runtime.Frame) []runtime.Frame {
+	for i, f := range frames {
+		if f.Function == "runtime.gopanic" {
+			frames = frames[i+1:]
+			break
+		}
+	}
+	for i, f := range frames {
+		if f.Function == "runtime.main" {
+			frames = frames[:i]
+			break
+		}
+	}
+	return frames
+}
+
 // FromPanic converts an intentional panic back to error and annotates it with
 // the panic call stack. Other panics are re-raised. It is intended to be used
 // in defer:
@@ -118,36 +136,28 @@ func FromPanic(p any) error {
 			return err
 		}
 		pc = pc[:n] // use only valid pcs
-		frames := runtime.CallersFrames(pc)
+		framesIter := runtime.CallersFrames(pc)
 
-		foundPanic := false
-		traces := []string{}
+		frames := []runtime.Frame{}
 		for {
-			frame, more := frames.Next()
-			if !foundPanic { // skip to the panic origin
-				if frame.Function == "runtime.gopanic" {
-					foundPanic = true
-				}
-				if !more {
-					break
-				}
-				continue
-			}
-			if frame.Function == "runtime.main" { // above user's main(), stop
-				break
-			}
-			traces = append(traces, fmt.Sprintf("PANIC: %s:%d %s()",
-				frame.File, frame.Line, frame.Function))
+			frame, more := framesIter.Next()
+			frames = append(frames, frame)
 			if !more {
 				break
 			}
 		}
+		frames = trimFrames(frames)
+		// Invert frames in place.
+		for l, h := 0, len(frames)-1; l < h; l, h = l+1, h-1 {
+			frames[l], frames[h] = frames[h], frames[l]
+		}
+		traces := make([]string, len(frames))
+		for i, frame := range frames {
+			traces[i] = fmt.Sprintf("PANIC: %s:%d %s()",
+				frame.File, frame.Line, frame.Function)
+		}
 		if len(traces) == 0 { // no panic stack found, defensive code
 			return err
-		}
-		// Invert traces in place.
-		for l, h := 0, len(traces)-1; l < h; l, h = l+1, h-1 {
-			traces[l], traces[h] = traces[h], traces[l]
 		}
 		return &annotatedError{orig: err, curr: strings.Join(traces, "\n")}
 	}
