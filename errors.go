@@ -99,6 +99,13 @@ func ReasonPanic(s string, args ...any) {
 	panic(ReasonStack(3, s, args...))
 }
 
+// AnnotatePanic is equivalent to panic(Annotate(err, s, args...)) when e!=nil.
+func AnnotatePanic(e error, s string, args ...any) {
+	if e != nil {
+		panic(AnnotateStack(e, 3, s, args...))
+	}
+}
+
 // trimFrames to keep only the portion from panic to the top user main(). If in
 // doubt, keep the frames.
 func trimFrames(frames []runtime.Frame) []runtime.Frame {
@@ -153,7 +160,7 @@ func FromPanic(p any) error {
 		}
 		traces := make([]string, len(frames))
 		for i, frame := range frames {
-			traces[i] = fmt.Sprintf("PANIC: %s:%d %s()",
+			traces[i] = fmt.Sprintf("PANIC: %s:%d: %s()",
 				frame.File, frame.Line, frame.Function)
 		}
 		if len(traces) == 0 { // no panic stack found, defensive code

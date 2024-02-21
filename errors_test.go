@@ -51,6 +51,9 @@ func fnC(mode string) {
 		ReasonPanic("error in %s", "fnC")
 	case "panic":
 		panic("panic in fnC")
+	case "annotate panic":
+		err := Reason("normal error")
+		AnnotatePanic(err, "panic with annotation")
 	default:
 		// no error or panic
 	}
@@ -112,11 +115,11 @@ func TestErrors(t *testing.T) {
 			So(err.Error(), ShouldContainSubstring,
 				"errors_test.go:51: github.com/stockparfait/errors.fnC() error in fnC")
 			So(err.Error(), ShouldContainSubstring,
-				"errors_test.go:40 github.com/stockparfait/errors.fnA()")
+				"errors_test.go:40: github.com/stockparfait/errors.fnA()")
 			So(err.Error(), ShouldContainSubstring,
-				"errors_test.go:45 github.com/stockparfait/errors.fnB()")
+				"errors_test.go:45: github.com/stockparfait/errors.fnB()")
 			So(err.Error(), ShouldContainSubstring,
-				"errors_test.go:51 github.com/stockparfait/errors.fnC()")
+				"errors_test.go:51: github.com/stockparfait/errors.fnC()")
 		})
 
 		Convey("re-raise non-error panic", func() {
@@ -125,6 +128,25 @@ func TestErrors(t *testing.T) {
 
 		Convey("no-op without panic", func() {
 			So(fnA("none"), ShouldBeNil)
+		})
+
+		Convey("AnnotatePanic", func() {
+			Convey("annotates an error", func() {
+				err := fnA("annotate panic")
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring,
+					"errors_test.go:40: github.com/stockparfait/errors.fnA()")
+				So(err.Error(), ShouldContainSubstring,
+					"errors_test.go:45: github.com/stockparfait/errors.fnB()")
+				So(err.Error(), ShouldContainSubstring,
+					"errors_test.go:55: github.com/stockparfait/errors.fnC() normal error")
+				So(err.Error(), ShouldContainSubstring,
+					"errors_test.go:56: github.com/stockparfait/errors.fnC() panic with annotation")
+			})
+
+			Convey("no-op on nil", func() {
+				So(func() { AnnotatePanic(nil, "ignored") }, ShouldNotPanic)
+			})
 		})
 	})
 }
