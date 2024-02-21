@@ -151,10 +151,10 @@ func FromPanic(p any) error {
 		for l, h := 0, len(frames)-1; l < h; l, h = l+1, h-1 {
 			frames[l], frames[h] = frames[h], frames[l]
 		}
-		traces := []string{}
-		for _, frame := range frames {
-			traces = append(traces, fmt.Sprintf("PANIC: %s:%d %s()",
-				frame.File, frame.Line, frame.Function))
+		traces := make([]string, len(frames))
+		for i, frame := range frames {
+			traces[i] = fmt.Sprintf("PANIC: %s:%d %s()",
+				frame.File, frame.Line, frame.Function)
 		}
 		if len(traces) == 0 { // no panic stack found, defensive code
 			return err

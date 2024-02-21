@@ -101,7 +101,7 @@ func TestErrors(t *testing.T) {
 				So(trimFrames(frames), ShouldResemble, frames[2:4])
 			})
 
-			Convey("leave frames when no matches found", func() {
+			Convey("keep the frames when no matches found", func() {
 				So(trimFrames(frames[2:4]), ShouldResemble, frames[2:4])
 			})
 		})
