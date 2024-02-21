@@ -31,6 +31,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 // annotatedError annotates the original error with the current message.
@@ -41,6 +42,9 @@ type annotatedError struct {
 
 // Error implements error.
 func (e annotatedError) Error() string {
+	if e.orig == nil {
+		return e.curr
+	}
 	return fmt.Sprintf("%s\n%s", e.curr, e.orig.Error())
 }
 
@@ -49,10 +53,10 @@ func (e annotatedError) Unwrap() error {
 	return e.orig
 }
 
-// annotate must be called from Reason or Annotate only.
-func annotate(s string, args ...interface{}) string {
+// annotate must be called from ReasonStack or AnnotateStack only.
+func annotate(stack int, s string, args ...any) string {
 	// Frame 2 is the caller of Reason / Annotate.
-	pc, filename, line, ok := runtime.Caller(2)
+	pc, filename, line, ok := runtime.Caller(stack)
 	a := "ERROR: ???: "
 	if ok {
 		a = fmt.Sprintf("ERROR: %s:%d: %s() ", filename, line, runtime.FuncForPC(pc).Name())
@@ -60,19 +64,95 @@ func annotate(s string, args ...interface{}) string {
 	return a + fmt.Sprintf(s, args...)
 }
 
+// ReasonStack returns an error annotated with location `stack` levels up, and
+// message. Its arguments are the same as for fmt.Printf.
+func ReasonStack(stack int, s string, args ...any) error {
+	return &annotatedError{curr: annotate(stack, s, args...)}
+}
+
+// AnnotateStack annotates the existing error with location `stack` levels up,
+// and message, formatted as fmt.Printf(s, args...). If the original error is
+// nil, returns nil.
+func AnnotateStack(e error, stack int, s string, args ...any) error {
+	if e == nil {
+		return nil
+	}
+	return &annotatedError{orig: e, curr: annotate(stack, s, args...)}
+}
+
 // Reason returns an error annotated with location and message. Its arguments
 // are the same as for fmt.Printf.
-func Reason(s string, args ...interface{}) error {
-	return fmt.Errorf(annotate(s, args...))
+func Reason(s string, args ...any) error {
+	return ReasonStack(3, s, args...)
 }
 
 // Annotate the existing error with location and message, formatted as
 // fmt.Printf(s, args...). If the original error is nil, returns nil.
-func Annotate(e error, s string, args ...interface{}) error {
-	if e == nil {
+func Annotate(e error, s string, args ...any) error {
+	return AnnotateStack(e, 3, s, args...)
+}
+
+// ReasonPanic is equivalent to panic(Reason(s, args...)).  This allows using
+// panic as an exception for error handling.  See also FromPanic for converting
+// such panic back into error.
+func ReasonPanic(s string, args ...any) {
+	panic(ReasonStack(3, s, args...))
+}
+
+// FromPanic converts an intentional panic back to error and annotates it with
+// the panic call stack. Other panics are re-raised. It is intended to be used
+// in defer:
+//
+//	func Foo() (err error) {
+//	  defer func() { err = FromPanic(recover()) }()
+//	  // Foo body, may panic on error
+//	}
+func FromPanic(p any) error {
+	if p == nil {
 		return nil
 	}
-	return &annotatedError{orig: e, curr: annotate(s, args...)}
+	if err, ok := p.(*annotatedError); ok {
+		pc := make([]uintptr, 20)
+		n := runtime.Callers(3, pc)
+		if n == 0 { // shouldn't happen, defensive code
+			return err
+		}
+		pc = pc[:n] // use only valid pcs
+		frames := runtime.CallersFrames(pc)
+
+		foundPanic := false
+		traces := []string{}
+		for {
+			frame, more := frames.Next()
+			if !foundPanic { // skip to the panic origin
+				if frame.Function == "runtime.gopanic" {
+					foundPanic = true
+				}
+				if !more {
+					break
+				}
+				continue
+			}
+			if frame.Function == "runtime.main" { // above user's main(), stop
+				break
+			}
+			traces = append(traces, fmt.Sprintf("PANIC: %s:%d %s()",
+				frame.File, frame.Line, frame.Function))
+			if !more {
+				break
+			}
+		}
+		if len(traces) == 0 { // no panic stack found, defensive code
+			return err
+		}
+		// Invert traces in place.
+		for l, h := 0, len(traces)-1; l < h; l, h = l+1, h-1 {
+			traces[l], traces[h] = traces[h], traces[l]
+		}
+		return &annotatedError{orig: err, curr: strings.Join(traces, "\n")}
+	}
+	// Re-raise all other panics.
+	panic(p)
 }
 
 // Is reports whether any error in err's "Unwrap" chain matches target.
@@ -87,6 +167,6 @@ func Is(err, target error) bool {
 //
 // It is exactly as Go's errors.As method, and is provided to match the
 // functionality.
-func As(err error, target interface{}) bool {
+func As(err error, target any) bool {
 	return errors.As(err, target)
 }
