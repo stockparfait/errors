@@ -87,18 +87,20 @@ func TestErrors(t *testing.T) {
 
 	Convey("Panic methods work", t, func() {
 
-		Convey("AnnotateFromPanic recovers an error panic", func() {
+		Convey("recover an error panic", func() {
 			err := fnA("error")
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring,
 				"errors_test.go:50: github.com/stockparfait/errors.fnC() error in fnC")
-			So(err.Error(), ShouldContainSubstring, `
-PANIC: /Users/sergeyberezin/github/stockparfait/errors/errors_test.go:39 github.com/stockparfait/errors.fnA()
-PANIC: /Users/sergeyberezin/github/stockparfait/errors/errors_test.go:44 github.com/stockparfait/errors.fnB()
-PANIC: /Users/sergeyberezin/github/stockparfait/errors/errors_test.go:50 github.com/stockparfait/errors.fnC()`[1:])
+			So(err.Error(), ShouldContainSubstring,
+				"errors_test.go:39 github.com/stockparfait/errors.fnA()")
+			So(err.Error(), ShouldContainSubstring,
+				"errors_test.go:44 github.com/stockparfait/errors.fnB()")
+			So(err.Error(), ShouldContainSubstring,
+				"errors_test.go:50 github.com/stockparfait/errors.fnC()")
 		})
 
-		Convey("AnnotateFromPanic re-raises non-error panic", func() {
+		Convey("re-raise non-error panic", func() {
 			So(func() { fnA("panic") }, ShouldPanic)
 		})
 

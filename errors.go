@@ -151,6 +151,7 @@ func FromPanic(p any) error {
 		}
 		return &annotatedError{orig: err, curr: strings.Join(traces, "\n")}
 	}
+	// Re-raise all other panics.
 	panic(p)
 }
 
